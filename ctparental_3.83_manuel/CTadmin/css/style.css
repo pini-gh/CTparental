@@ -1,0 +1,55 @@
+
+	H1 {
+	font-family:"DejaVu Sans";
+	font-size: 15pt;
+	text-align: left;
+	color: #666666;
+	}
+
+	H2 {
+	font-family:"DejaVu Sans";
+	font-size: 15pt;
+	text-align: center;
+	color: #666666;
+	}
+
+	:link, :visited, :link:hover, :visited:hover {
+	font-family:"DejaVu Sans";
+	font-size: small;
+	color: #666666;
+	}
+
+	body, p, ul, li {
+	font-family:"DejaVu Sans";
+	font-size: small;
+	color: #666666;
+	background-color: #EFEFEF;
+	text-align: justify;
+	}
+
+	th {
+	font-family:"DejaVu Sans";
+	font-size: small;
+	text-align: center;
+	color: #EFEFEF;
+	background-color: #666666;
+	}
+
+	table {
+	font-family:"DejaVu Sans";
+	font-size: small;
+	color: #666666;
+	background-color: #EFEFEF;
+	}
+	
+	
+	/*style des étiquettes*/
+	.etiquette {
+	font-family:"DejaVu Sans";
+	font-size: small;
+	text-align: right;
+	color: #666666;
+	background-color: #d0ddb0;
+	}
+	
+	

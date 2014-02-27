@@ -1,0 +1,55 @@
+# 09/01/2014
+# Version 3.83 	Correctif de bugs, notament celui qui pouvais suprimer trops de paquet a la desinstallation (en mode manuel)
+#				Compatibilitée avec mageia 3 et 4 
+#				tester sur mageia 4 et fedora 20 ,i386 gnome + gdm , devrai marcher avec kdm de lightdm aussi
+#				la notification ne marche toujour pas sur fedora et mageia.				
+# Version 3.82 Correctif de bugs sur l'interface web.
+# Version 3.81 Ajout d'un attente de remonter de la connection de NetworkManager avans de télécharger la blackliste , 
+#	       doit résoudre les problêmes d'install sur des connection wifi qui son plus longue a remonter .
+#	       on ne peut plus rentrer n'importe quoi dans le chant de minutes de connection autorisée par 24h.
+# Version 3.80 Ajout du crédit temps de connection journaliere.
+# Version 3.78 Amelioration de la compatibilitée avec les distributions n'utilisant pas /etc/X11/Xsession.d/
+#	       En decommentent #NOXSESSIOND=1 dans le fichier dist.conf, on utilise des scriptes alternatifs , qui permet le surpport
+#	       des group de privilégié avec kdm,gdm et lightdm (tester sur fedora 20).
+#	       Dans tous les cas pour une utilisation optimale de cette fonction il est recommander de désactiver le chamgement d'utilisateur et
+#	       De ne laisser que la Déconnection accessible.
+# Version 3.77 Amelioration de la compatibilitée des notifications avec ubuntu.
+# Version 3.76 Correction de bug. tester sur lubuntu 13.10 et debian testin (xfce4 + lightdm) tous fonctionne.
+#	       La fonction de group de privilégié devrai fonctionner dans les distributions qui execute les scriptes 
+#	       dans /etc/X11/Xsession.d/ a l'ouverture de session Xwindows.
+# Version 3.75 Ajoute l'interface web pour le group de privilégier .
+# Version 3.70 Ajoute la possibiliter d'avoir un group de privilégié ne subisent pas de filtrage.
+# Version 3.62 Execution des fonctions adapt et reabdomaine en virons 50% plus rapise . 
+# 	       ce qui prener 40secondes en prent plus que 22 maintenent sur mon poste ,
+#	       ce gains devrai ètre encore plus notable sur les pc avec des disques dure lant (ide).
+# Version 3.61 Ajout un bouton de déconnection a l'interface d'administration
+# Version 3.60 Ajout du support Fedora 19 (sans la notification ) et la compatibilité avec lxdm , correction d'un bug dans la fonction timecronalert
+# Version 3.52 Encore des corrections de bug notamment la prise en charge de gdm3 , toujour pas de notification sur mageia3
+# Version 3.51 Quelques corrections de bug surtout pour l’installe manuel /usr/local/etc/dist.conf
+# Version 3.50 Ajout d'un system de plugin de distribution par le biais du fichier /usr/local/etc/dist.conf
+# Version 3.41 Corrections d'un bug de détections d'utilisateurs dans l'interface et les scripte de gestion des heures de connections.
+#              compte a rebours par notification toutes les minutes commencent 5 minutes avant la fermeture , et non plus une seul 
+#              notification 5 minutes avant la fermeture.
+# Version 3.40 ajout la compatibilité avec mageia 3.
+# Version 3.31 Pévient les utilisateurs 5 minutes avant la fermeture de la session en utilisant notify-send.
+# Version 3.30 Corrections orthographiques par Pierre-Edouard TESSIER
+# Version 3.21 corection de bugs sur la fonction des heures de connection en ligne de commande CTparental.sh -tlo.
+# Version 3.20 corection du bug qui autoriser a rentréer des heures alant de 00h00 a 29h59 , ainssi que celui enpéchant le paramétrage manuel des heures de connection. fourni sous forme de deb
+# Version 3.10 corection de bug , inteface web complète.login mot de passe personaliser sauvegarder dans /root/passwordCTadmin 
+# Version 3.00 ajout d'une interface web d'administration (http://127.0.0.1/CTadmin) login: admin password: celui rentré l'aure de l'install. tester sur debian wheezy .
+# version 2.41 simplification du code et corection de bug.
+# version 2.40 ajoute la possiblilitée d'activer une mise a jour automatique de la black liste de toulouse (tous les 7 jours).
+# version 2.31 correction de bug
+# version 2.30 ajoute la gestion du filtrage par listes blanches ou par listes noires(default)
+# version 2.21 correction de bug .
+# version 2.2. ajoute utilisation de lighttpd au lieu de mibi-httpd pour la ajout de la compatibilitée avec mageia 2 .
+# version 2.11 affiche la page de redirection au lieu d'erreur 404 , possibiliter de choisir un repertoir de sources
+#          contenant la page de redirection a installer.
+# version 2.10 ajoute la compatibilitée avec ubuntu 12.04.
+# version 2.01 correction de bug .
+# version 2.0  ajoute les restrictions horaire de login pour les utilisateurs. Compatible avec gdm lightdm slim kdm xdm et login ( connection console tty ).
+# version 1.04 ajout de fonction de white liste pour réabiliter des domaines bloquer par la blackliste de toulouse sans pour autemps enlever la categorie complette.
+# version 1.03 ajout de fonction de configuration des categories activées .
+# version 1.02 ajout du support pour yum , urpmi
+# version 1.01 ( ajoute une un "sens interdit" au lieux de "it works" pour les domaine bloqué.
+#                simplification de la récupération interface_WAN , merci a PengouinPdt )
