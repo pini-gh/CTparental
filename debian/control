@@ -1,0 +1,15 @@
+Package: ctparental
+Version: 3.83
+Architecture: all
+Maintainer: MARSAT guillaume
+Installed-Size: 200
+Depends: dnsmasq,perl,sudo,lighttpd,resolvconf,php5-cgi,wget,libnotify-bin,notification-daemon
+Section: utils
+Priority: optional
+Homepage: http://openxcom.org/
+Description: Controle parental.
+ Filtrage web basé sur dnsmasq, resolvconf lighttpdet et cron,
+ une gestion des horaires de connection est aussi intégrée et
+ une interface web (http://127.0.0.1/CTadmin) permettant de paramétrer tous ça.
+ Le couple login mot de passe doit être saisi à l'install, mais peut être
+ modifié par la suite grâce à la commande CTparental.sh -uhtml.
