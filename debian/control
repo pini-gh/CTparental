@@ -1,12 +1,17 @@
-Package: ctparental
-Version: 3.83
-Architecture: all
-Maintainer: MARSAT guillaume
-Installed-Size: 200
-Depends: dnsmasq,perl,sudo,lighttpd,resolvconf,php5-cgi,wget,libnotify-bin,notification-daemon
+Source: ctparental
 Section: utils
 Priority: optional
-Homepage: http://openxcom.org/
+Maintainer: Guillaume Marsat <guillaume.marsat@laposte.net>
+Uploaders: Gilles Filippini <gilles.filippini@free.fr>
+Homepage: https://github.com/pini-gh/CTparental.git
+Vcs-Browser: https://github.com/pini-gh/CTparental.git
+Vcs-Git: https://github.com/pini-gh/CTparental.git
+Build-Depends: debhelper (>=7.0.50~)
+Standards-Version:3.9.4
+
+Package: ctparental
+Architecture: all
+Depends: dnsmasq,perl,sudo,lighttpd,resolvconf,php5-cgi,wget,libnotify-bin,notification-daemon
 Description: Controle parental.
  Filtrage web basé sur dnsmasq, resolvconf lighttpdet et cron,
  une gestion des horaires de connection est aussi intégrée et

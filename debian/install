@@ -1,0 +1,3 @@
+CTparental.sh	usr/local/bin
+dist.conf	usr/local/etc/CTparental
+CTadmin		var/www
