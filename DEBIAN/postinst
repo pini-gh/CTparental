@@ -1,3 +1,0 @@
-#!/bin/bash
-/usr/local/bin/CTparental.sh -i -nodep -nomanuel  2> /dev/null
-exit 0
