@@ -11,9 +11,9 @@ Standards-Version:3.9.4
 
 Package: ctparental
 Architecture: all
-Depends: dnsmasq,perl,sudo,lighttpd,resolvconf,php5-cgi,wget,libnotify-bin,notification-daemon
+Depends: dnsmasq,perl,sudo,lighttpd,php5-cgi,wget,libnotify-bin,notification-daemon,iptables-persistent
 Description: Controle parental.
- Filtrage web basé sur dnsmasq, resolvconf lighttpdet et cron,
+ Filtrage web basé sur dnsmasq, lighttpd et cron,
  une gestion des horaires de connection est aussi intégrée et
  une interface web (http://127.0.0.1/CTadmin) permettant de paramétrer tous ça.
  Le couple login mot de passe doit être saisi à l'install, mais peut être

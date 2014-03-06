@@ -1,3 +1,11 @@
+ctparental (3.83+pini1-1) UNRELEASED; urgency=medium
+
+  * Rely on iptables to differentiate priviledged and unpriviledged users.
+  * Depends: iptables-persistent
+  * Drop Depends: resolvconf to not touch /etc/resolv.conf
+
+ -- Gilles Filippini <pini@debian.org>  Thu, 06 Mar 2014 22:54:14 +0100
+
 ctparental (3.83-1) unstable; urgency=medium
 
   * Initial source package with a result as close as possible from the
