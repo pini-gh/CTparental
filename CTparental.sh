@@ -1612,10 +1612,6 @@ case $arg1 in
 	  iptablesoff
 	  iptableson
       ;;
-     -t )
-     iptablesoff
-	   
-      ;;
     -uctl )
 	  # apelet toute les minute par cron pour activer desactiver les usagers ayant des restrictions de temps journalier de connection.
 	  updatetimelogin
