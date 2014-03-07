@@ -114,6 +114,7 @@ DNSMASQrestart=${DNSMASQrestart:="$CMDSERVICE dnsmasq restart "}
 NWMANAGERstop=${NWMANAGERstop:="$CMDSERVICE network-manager stop"}
 NWMANAGERstart=${NWMANAGERstart:="$CMDSERVICE network-manager start"}
 NWMANAGERrestart=${NWMANAGERrestart:="$CMDSERVICE network-manager restart"}
+IPTABLESsave=${IPTABLESsave:="$CMDSERVICE iptables-persistent save"}
 
 #### LOCALISATION du fichier PID lighttpd par default ####
 LIGHTTPpidfile=${LIGHTTPpidfile:="/var/run/lighttpd.pid"}
@@ -455,14 +456,15 @@ dnsmasqon () {
    # Inclusion de la blacklist <domains> de Toulouse dans la configuration
    conf-dir=$DIR_DNS_BLACKLIST_ENABLED
    # conf-file=$DIR_DEST_ETC/alcasar-dns-name   # zone de definition de noms DNS locaux
+   interface=lo
+   listen-address=127.0.0.1
    no-dhcp-interface=$interface_WAN
    bind-interfaces
    cache-size=1024
    domain-needed
    expand-hosts
    bogus-priv
-   server=$DNS1
-   server=$DNS2
+   port=54
    
 EOF
 $DNSMASQrestart
@@ -472,23 +474,35 @@ fi
 }
 dnsmasqoff () {
    $SED "s?^DNSMASQ.*?DNSMASQ=OFF?g" $FILE_CONF
-   cat << EOF > $DNSMASQCONF
-         # Configuration file for "dnsmasq with blackhole"
-   # Inclusion de la blacklist <domains> de Toulouse dans la configuration
-   # conf-dir=$DIR_DNS_BLACKLIST_ENABLED
-   # conf-file=$DIR_DEST_ETC/alcasar-dns-name   # zone de definition de noms DNS locaux
-   no-dhcp-interface=$interface_WAN
-   bind-interfaces
-   cache-size=0
-   domain-needed
-   expand-hosts
-   bogus-priv
-   server=$DNS1
-   server=$DNS2
-   
-EOF
+}
+iptableson () {
+   # Redirect DNS requests
+   # note: http://superuser.com/a/594164
+   /sbin/iptables -t nat -N ctparental
+   /sbin/iptables -t nat -A OUTPUT -j ctparental
+   # Accept normal DNS requests from priviledged users
+   if ctoff_entry=$(grep '^ctoff:' /etc/group); then
+      priviledged_users=$(echo "$ctoff_entry" | /usr/bin/awk -F: '{print $4;}' | sed 's/,/ /g')
+      for user in $priviledged_users; do
+         /sbin/iptables -t nat -A ctparental -m owner --uid-owner "$user" -p tcp --dport 53 -j ACCEPT
+         /sbin/iptables -t nat -A ctparental -m owner --uid-owner "$user" -p udp --dport 53 -j ACCEPT
+      done
+   fi
+   # Treat other system users as priviledged
+   /sbin/iptables -t nat -A ctparental -m owner --uid-owner 0-999 -p tcp --dport 53 -j ACCEPT
+   /sbin/iptables -t nat -A ctparental -m owner --uid-owner 0-999 -p udp --dport 53 -j ACCEPT
+   # Force non priviledged users to use dnsmasq
+   /sbin/iptables -t nat -A ctparental -p tcp --dport 53 -j DNAT --to 127.0.0.1:54
+   /sbin/iptables -t nat -A ctparental -p udp --dport 53 -j DNAT --to 127.0.0.1:54
 
-$DNSMASQrestart
+   # Save configuration so that it survives a reboot
+   $IPTABLESsave
+}
+iptablesoff () {
+   /sbin/iptables -t nat -D OUTPUT -j ctparental || /bin/true
+   /sbin/iptables -t nat -F ctparental || /bin/true
+   /sbin/iptables -t nat -X ctparental || /bin/true
+   $IPTABLESsave
 }
 dnsmasqwhitelistonly  () {
    $SED "s?^DNSMASQ.*?DNSMASQ=WHITE?g" $FILE_CONF
@@ -973,94 +987,15 @@ applistegctoff () {
 }
 
 activegourpectoff () {
-groupadd ctoff
-$ADDUSERTOGROUP root ctoff
-if [ ! -f $STARTUPGDM ];then
-cat << EOF > $STARTUPGDM
-#!/bin/bash
-
-exit 0
-EOF
-chmod 755 $STARTUPGDM
-chown root:root $STARTUPGDM
-fi
-if [ ! -f $STARTUPLIGHTDM ];then
-cat << EOF > $STARTUPLIGHTDM
-#!/bin/bash
-
-exit 0
-EOF
-chmod 755 $STARTUPLIGHTDM
-chown root:root $STARTUPLIGHTDM 
-fi 
-if [ $NOXSESSIOND -eq 1 ];then
-$SED "s?\#greeter-setup-script.*?greeter-setup-script=$STARTUPLIGHTDM?g" $CONFLIGHTDM
-$SED "$(grep -n -E "^\#\!/bin/" $STARTUPKDM | cut -d":" -f1)a$XLOGONSCRIPTEALT &" $STARTUPKDM
-$SED "$(grep -n -E "^\#\!/bin/" $STARTUPGDM | cut -d":" -f1)a$XLOGONSCRIPTEALT &" $STARTUPGDM
-$SED "$(grep -n -E "^\#\!/bin/" $STARTUPLIGHTDM | cut -d":" -f1)a$XLOGONSCRIPTEALT &" $STARTUPLIGHTDM
-
-fi
-cat << EOF > $XLOGONSCRIPTEALT
-#!/bin/bash
-PATH=$PATH
-sleep 10
-USERSCONECT=\$(who | awk '//{print \$1}' | sort -u)
-childloginon=0
-for USERCT in \$USERSCONECT
-do      
-        if [ \$(groups \$USERCT | grep -v -c ctoff ) -eq 1 ] ;then
-        childloginon=1
-        fi
-done
-        if [ \$childloginon -eq 1 ];then
-                if [ \$(cat $FILE_CONF | grep -c DNSMASQ=OFF ) -eq 1 ];then
-                /usr/local/bin/CTparental.sh -on > /dev/null
-                fi
-        else
-                if [ \$(cat $FILE_CONF | grep -c DNSMASQ=OFF ) -eq 0 ];then
-                 /usr/local/bin/CTparental.sh -off > /dev/null
-                fi
-        fi
-EOF
-
-cat << EOF > $XLOGONSCRIPTE
-#!/bin/bash
-USERSCONECT=\$(who | awk '//{print \$1}' | sort -u)
-childloginon=0
-for USERCT in \$USERSCONECT
-do
-	if [ \$(groups \$USERCT | grep -v -c ctoff ) -eq 1 ] ;then
-        childloginon=1
-	fi
-done
-	if [ \$childloginon -eq 1 ];then
-		if [ \$(cat $FILE_CONF | grep -c DNSMASQ=OFF ) -eq 1 ];then
-		sudo /usr/local/bin/CTparental.sh -on > /dev/null
-		fi
-	else
-		if [ \$(cat $FILE_CONF | grep -c DNSMASQ=OFF ) -eq 0 ];then
-		sudo /usr/local/bin/CTparental.sh -off > /dev/null
-		fi
-	fi
-EOF
-chown root:root $XLOGONSCRIPTEALT
-chmod 755 $XLOGONSCRIPTEALT
-chown root:root $XLOGONSCRIPTE
-chmod 655 $XLOGONSCRIPTE
-$SED "s?^GCTOFF.*?GCTOFF=ON?g" $FILE_CONF
-applistegctoff
+   groupadd ctoff
+   $ADDUSERTOGROUP root ctoff
+   $SED "s?^GCTOFF.*?GCTOFF=ON?g" $FILE_CONF
+   applistegctoff
 }
 
 desactivegourpectoff () {
-if [ $NOXSESSIOND -eq 1 ];then
-$SED "$(echo $XLOGONSCRIPTEALT | sed -e 's|\/|\\/|g' | sed -e 's|\.|\\.|g')/d" $STARTUPLIGHTDM
-$SED "$(echo $XLOGONSCRIPTEALT | sed -e 's|\/|\\/|g' | sed -e 's|\.|\\.|g')/d" $STARTUPKDM
-$SED "$(echo $XLOGONSCRIPTEALT | sed -e 's|\/|\\/|g' | sed -e 's|\.|\\.|g')/d" $STARTUPGDM
-fi
-   rm -f $XLOGONSCRIPTEALT
-   rm -f $XLOGONSCRIPTE
    groupdel ctoff
-$SED "s?^GCTOFF.*?GCTOFF=OFF?g" $FILE_CONF
+   $SED "s?^GCTOFF.*?GCTOFF=OFF?g" $FILE_CONF
 }
 
 uninstall () {
@@ -1566,12 +1501,9 @@ usage="Usage: CTparental.sh    {-i }|{ -u }|{ -dl }|{ -ubl }|{ -rl }|{ -on }|{ -
 -nomanuel => utiliser uniquement pour le scripte de postinst et prerm 
             du deb.
 -gcton	  => créer un group de privilégier ne subisent pas le filtrage.
-			 mais ralenti les ouvertures de sessions, quant on passe d'un user restraint a un qui ne l'est pas 
-			 est inversement.
 			 exemple:CTparental.sh -gctulist
 			 editer $FILE_GCTOFFCONF et y commanter tous les utilisateurs que l'on veut filtrer.
 			 CTparental.sh -gctalist
-			 (note temps qu'un utilisateur non privilégier restera connecter le filtrage sera actif!!)
 -gctoff   => suprime le group de privilégier .
 			 tous les utilisateurs du system subisse le filtrages!!
 -gctulist => Mes a jour le fichier de conf du group , $FILE_GCTOFFCONF
@@ -1586,10 +1518,13 @@ case $arg1 in
       ;;
    -i | --install )
       install
+      iptablesoff
+      iptableson
       exit 0
       ;;
    -u | --uninstall )
       autoupdateoff 
+      iptablesoff
       dnsmasqoff
       desactivetimelogin
       uninstall
@@ -1620,11 +1555,13 @@ case $arg1 in
       ;;
    -on | --on )
       dnsmasqon
+      iptableson
       exit 0
       ;;
    -off | --off )
       autoupdateoff 
       dnsmasqoff
+      iptablesoff
       exit 0
       ;;
    -wlo | --whitelistonly )
@@ -1665,15 +1602,23 @@ case $arg1 in
       ;;
     -gcton )
       activegourpectoff
+	  iptablesoff
+	  iptableson
       ;;
     -gctoff )
 	  desactivegourpectoff
+	  iptablesoff
+	  iptableson
       ;;
     -gctulist )
 	  updatelistgctoff
+	  iptablesoff
+	  iptableson
       ;;
     -gctalist )
 	  applistegctoff
+	  iptablesoff
+	  iptableson
       ;;
     -uctl )
 	  # apelet toute les minute par cron pour activer desactiver les usagers ayant des restrictions de temps journalier de connection.

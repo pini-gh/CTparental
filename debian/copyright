@@ -1,0 +1,24 @@
+Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: CTparental
+Upstream-Contact: Guillaume Marsat <guillaume.marsat@laposte.net>
+Upstream-Source:
+ https://github.com/marsat/CTparental.git
+
+Files: *
+Copyright: © 2013-2014 Guillaume Marsat <guillaume.marsat@laposte.net>
+
+Files: CTparental.sh
+Copyright: © 2013-2014 Guillaume Marsat <guillaume.marsat@laposte.net>
+ Parts of the code come from the script alcasar-bl.sh by Franck BOUIJOUX
+ and Richard REY for project alcasar [1] release 2.6.1.
+ [1] http://www.alcasar.net/
+License: GPL-3+
+
+Files: debian/*
+Copyright: © 2013-2014 Guillaume Marsat <guillaume.marsat@laposte.net>
+           © 2014 Gilles Filippini <gilles.filippini@free.fr>
+License: GPL-3+
+
+License: GPL-3+
+ On Debian systems the full text of the GNU General Public License can be
+ found in the `/usr/share/common-licenses/GPL' file.
