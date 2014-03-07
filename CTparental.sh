@@ -489,8 +489,9 @@ iptableson () {
       done
    fi
    # Treat other system users as priviledged
-   /sbin/iptables -t nat -A ctparental -m owner --uid-owner 0-999 -p tcp --dport 53 -j ACCEPT
-   /sbin/iptables -t nat -A ctparental -m owner --uid-owner 0-999 -p udp --dport 53 -j ACCEPT
+   UIDPROCESSMAX=$(($UIDMINUSER - 1))
+   /sbin/iptables -t nat -A ctparental -m owner --uid-owner 0-$UIDPROCESSMAX -p tcp --dport 53 -j ACCEPT
+   /sbin/iptables -t nat -A ctparental -m owner --uid-owner 0-$UIDPROCESSMAX -p udp --dport 53 -j ACCEPT
    # Force non priviledged users to use dnsmasq
    /sbin/iptables -t nat -A ctparental -p tcp --dport 53 -j DNAT --to 127.0.0.1:54
    /sbin/iptables -t nat -A ctparental -p udp --dport 53 -j DNAT --to 127.0.0.1:54
