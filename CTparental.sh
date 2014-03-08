@@ -97,7 +97,7 @@ DAYSPAM=( Mo Tu We Th Fr Sa Su )
 DAYSCRON=( mon tue wed thu fri sat sun )
 
 #### DEPENDANCES par DEFAULT #####
-DEPENDANCES=${DEPENDANCES:=" dnsmasq lighttpd php5-cgi libnotify-bin notification-daemon resolvconf "}
+DEPENDANCES=${DEPENDANCES:=" dnsmasq lighttpd php5-cgi libnotify-bin notification-daemon iptables-persistent "}
 #### RESOLVCONF EST PAS PRESENT DANS LA DISTRIBUTION ####
 NORESOLVCONF=${NORESOLVCONF:=0}
 #### COMMANDES de services par DEFAULT #####
@@ -480,21 +480,13 @@ iptableson () {
    # note: http://superuser.com/a/594164
    /sbin/iptables -t nat -N ctparental
    /sbin/iptables -t nat -A OUTPUT -j ctparental
-   # Accept normal DNS requests from priviledged users
-   if ctoff_entry=$(grep '^ctoff:' /etc/group); then
-      priviledged_users=$(echo "$ctoff_entry" | /usr/bin/awk -F: '{print $4;}' | sed 's/,/ /g')
-      for user in $priviledged_users; do
-         /sbin/iptables -t nat -A ctparental -m owner --uid-owner "$user" -p tcp --dport 53 -j ACCEPT
-         /sbin/iptables -t nat -A ctparental -m owner --uid-owner "$user" -p udp --dport 53 -j ACCEPT
-      done
-   fi
-   # Treat other system users as priviledged
-   /sbin/iptables -t nat -A ctparental -m owner --uid-owner 0-999 -p tcp --dport 53 -j ACCEPT
-   /sbin/iptables -t nat -A ctparental -m owner --uid-owner 0-999 -p udp --dport 53 -j ACCEPT
    # Force non priviledged users to use dnsmasq
-   /sbin/iptables -t nat -A ctparental -p tcp --dport 53 -j DNAT --to 127.0.0.1:54
-   /sbin/iptables -t nat -A ctparental -p udp --dport 53 -j DNAT --to 127.0.0.1:54
-
+      for user in `listeusers` ; do
+      if  [ $(groups $user | grep -c " ctoff$") -eq 0 ];then
+         /sbin/iptables -t nat -A ctparental -m owner --uid-owner "$user" -p tcp --dport 53 -j DNAT --to 127.0.0.1:54 
+         /sbin/iptables -t nat -A ctparental -m owner --uid-owner "$user" -p udp --dport 53 -j DNAT --to 127.0.0.1:54
+      fi
+      done
    # Save configuration so that it survives a reboot
    $IPTABLESsave
 }
