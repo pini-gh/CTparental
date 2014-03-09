@@ -98,8 +98,7 @@ DAYSCRON=( mon tue wed thu fri sat sun )
 
 #### DEPENDANCES par DEFAULT #####
 DEPENDANCES=${DEPENDANCES:=" dnsmasq lighttpd php5-cgi libnotify-bin notification-daemon iptables-persistent "}
-#### RESOLVCONF EST PAS PRESENT DANS LA DISTRIBUTION ####
-NORESOLVCONF=${NORESOLVCONF:=0}
+
 #### COMMANDES de services par DEFAULT #####
 CMDSERVICE=${CMDSERVICE:="service "}
 CRONstart=${CRONstart:="$CMDSERVICE cron start "}
@@ -131,31 +130,12 @@ DNSMASQCONF=${DNSMASQCONF:="/etc/dnsmasq.conf"}
 MAINCONFHTTPD=${MAINCONFHTTPD:="/etc/lighttpd/lighttpd.conf"}
 DIRCONFENABLEDHTTPD=${DIRCONFENABLEDHTTPD:="/etc/lighttpd/conf-enabled"}
 CTPARENTALCONFHTTPD=${CTPARENTALCONFHTTPD:="$DIRCONFENABLEDHTTPD/10-CTparental.conf"}
-RESOLVCONFMAIN=${RESOLVCONFMAIN:="/etc/resolvconf"}
-RESOLVDNSMASQ=${RESOLVDNSMASQ:="$RESOLVCONFMAIN/run/interface/lo.dnsmasq"}
-RESOLVCONFORDER=${RESOLVCONFORDER:="$RESOLVCONFMAIN/interface-order"}
 DIRHTML=${DIRHTML:="/var/www/CTparental"}
 DIRadminHTML=${DIRadminHTML:="/var/www/CTadmin"}
 PASSWORDFILEHTTPD=${PASSWORDFILEHTTPD:="/etc/lighttpd/lighttpd-htdigest.user"}
 REALMADMINHTTPD=${REALMADMINHTTPD:="interface admin"}
 CMDINSTALL=""
-NOXSESSIOND=${NOXSESSIOND:=0}
-LOGONDDIR=${LOGONDDIR:="/etc/X11/Xsession.d"}
-if [ ! -d $LOGONDDIR ];then
-   mkdir $LOGONDDIR 
-fi
-STARTUPKDM=${STARTUPKDM:=/etc/kde/kdm/Xsetup}
-STARTUPGDM=${STARTUPGDM:=/etc/gdm/PostLogin/Default}
-CONFLIGHTDM=${CONFLIGHTDM:=/etc/lightdm/lightdm.conf}
-if [ $(cat $CONFLIGHTDM | grep -c ^greeter-setup-script= ) -eq 1 ];then
-STARTUPLIGHTDM=$(cat $CONFLIGHTDM | grep ^greeter-setup-script= | cut -d"=" -f2 )
-else
-STARTUPLIGHTDM=${STARTUPLIGHTDM:=/usr/local/bin/lightdm-greeter-script}
-fi
 
-
-XLOGONSCRIPTE=${XLOGONSCRIPTE:="$LOGONDDIR/10x11-CTparentalLogin"}
-XLOGONSCRIPTEALT=${XLOGONSCRIPTEALT:="/usr/local/bin/10x11-CTparentalLogin"}
 ADDUSERTOGROUP=${ADDUSERTOGROUP:="gpasswd -a "}
 DELUSERTOGROUP=${DELUSERTOGROUP:="gpasswd -d "}
 if [ $(yum help 2> /dev/null | wc -l ) -ge 50 ] ; then
@@ -187,13 +167,9 @@ fi
 
 interface_WAN=$(ip route | awk '/^default via/{print $5}' | sort -u ) # suppose que la passerelle est la route par default
 
-if [ -f $DIR_CONF/resolv.conf.sav ];then
-   DNS1=$(cat $DIR_CONF/resolv.conf.sav | grep ^nameserver | cut -d " " -f2 | tr "\n" " " | cut -d " " -f1)
-   DNS2=$(cat $DIR_CONF/resolv.conf.sav | grep ^nameserver | cut -d " " -f2 | tr "\n" " " | cut -d " " -f2)
-else
-   DNS1=$(cat /etc/resolv.conf | grep ^nameserver | cut -d " " -f2 | tr "\n" " " | cut -d " " -f1)
-   DNS2=$(cat /etc/resolv.conf | grep ^nameserver | cut -d " " -f2 | tr "\n" " " | cut -d " " -f2)
-fi
+DNS1=$(cat /etc/resolv.conf | grep ^nameserver | cut -d " " -f2 | tr "\n" " " | cut -d " " -f1)
+DNS2=$(cat /etc/resolv.conf | grep ^nameserver | cut -d " " -f2 | tr "\n" " " | cut -d " " -f2)
+
 
 PRIVATE_IP="127.0.0.10"
 
@@ -907,46 +883,17 @@ install () {
       catChoice
       dnsmasqon
       $SED "s?^LASTUPDATE.*?LASTUPDATE=$THISDAYS=`date +%d-%m-%Y\ %T`?g" $FILE_CONF
-      confresolvconf
       FoncHTTPDCONF
       $ENCRON
       $ENLIGHTTPD
       $ENDNSMASQ
       $ENNWMANAGER
 
+
       
 }
 
-confresolvconf () {
-if [ $NORESOLVCONF -eq 1 ] ; then
-	chattr -i /etc/resolv.conf
-	echo "nameserver 127.0.0.1" > /etc/resolv.conf
-	chattr +i /etc/resolv.conf
-else 
-	echo "nameserver 127.0.0.1" > $RESOLVDNSMASQ
-	if [ ! -f $RESOLVCONFORDER ];then
-cat << EOF > $RESOLVCONFORDER
-	# interface-order(5)
-	lo.inet*
-	lo.dnsmasq
-	lo.pdnsd
-	lo.!(pdns|pdns-recursor)
-	lo
-	tun*
-	tap*
-	hso*
-	em+([0-9])?[+([0-9]))*
-	p+([0-9]p+([0-9])?(_+([0-9]))*
-	eth*
-	ath*
-	wlan*
-	ppp*
-	*
-EOF
-	fi
-	resolvconf -u
-fi
-}
+
 updatelistgctoff () {
 	## on ajoutes tous les utilisateurs manquant dans la liste
 	for PCUSER in `listeusers`
@@ -1004,15 +951,6 @@ uninstall () {
    rm -rf /usr/share/lighttpd/*
    rm -f $CTPARENTALCONFHTTPD
    rm -rf $DIRadminHTML
-   if [ $NORESOLVCONF -eq 1 ] ; then
-		chattr -i /etc/resolv.conf
-		cat $DIR_CONF/resolv.conf.sav > /etc/resolv.conf
-		dhclient -r
-		dhclient
-   else 
-	   rm -f $RESOLVDNSMASQ
-	   resolvconf -u
-   fi
    if [ -f /etc/NetworkManager/NetworkManager.conf ];then
 	$SED "s/^#dns=dnsmasq/dns=dnsmasq/g" /etc/NetworkManager/NetworkManager.conf
 	$NWMANAGERrestart
