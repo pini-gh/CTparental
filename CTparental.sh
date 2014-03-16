@@ -699,6 +699,9 @@ cp -rf CTadmin/* $DIRadminHTML/
 #fi
 chmod 700 /root/passwordCTadmin
 chown root:root /root/passwordCTadmin
+mkdir /run/lighttpd/
+chmod 770 /run/lighttpd/
+chmod root:$GROUPHTTPD /run/lighttpd/
 cat << EOF > $CTPARENTALCONFHTTPD
 
 fastcgi.server = (
