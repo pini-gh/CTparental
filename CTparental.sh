@@ -98,6 +98,8 @@ DAYSCRON=( mon tue wed thu fri sat sun )
 
 #### DEPENDANCES par DEFAULT #####
 DEPENDANCES=${DEPENDANCES:=" dnsmasq lighttpd php5-cgi libnotify-bin notification-daemon iptables-persistent "}
+#### PACKETS EN CONFLI par DEFAULT #####
+CONFLICTS=${CONFLICTS:=" mini-httpd apache2 firewalld "}
 
 #### COMMANDES de services par DEFAULT #####
 CMDSERVICE=${CMDSERVICE:="service "}
@@ -123,6 +125,7 @@ ENCRON=${ENCRON:=""}
 ENLIGHTTPD=${ENLIGHTTPD:=""}
 ENDNSMASQ=${ENDNSMASQ:=""}
 ENNWMANAGER=${ENNWMANAGER:=""}
+ENIPTABLESSAVE=${ENIPTABLESSAVE:=""}
 #### UID MINIMUM pour les UTILISATEUR
 UIDMINUSER=${UIDMINUSER:=1000}
 
@@ -866,8 +869,15 @@ install () {
       initblenabled
       cat /etc/resolv.conf > $DIR_CONF/resolv.conf.sav
       if [ $noinstalldep = "0" ]; then
+	  for PACKAGECT in $CONFLICTS
+         do
+			$CMDREMOVE $PACKAGECT 2> /dev/null
+         done
+	  fi
+      if [ $noinstalldep = "0" ]; then
 	      $CMDINSTALL $DEPENDANCES
       fi
+      
       if [ ! -f blacklists.tar.gz ]
       then
          download
@@ -891,6 +901,7 @@ install () {
       $ENLIGHTTPD
       $ENDNSMASQ
       $ENNWMANAGER
+      $ENIPTABLESSAVE
 
 
       
