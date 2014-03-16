@@ -1,4 +1,5 @@
 # 09/01/2014
+# Version 3.84  Abendont des scripte a l'ouverture de session au profit de règles iptables dedier au utilisateur filtrée.
 # Version 3.83 	Correctif de bugs, notament celui qui pouvais suprimer trops de paquet a la desinstallation (en mode manuel)
 #				Compatibilitée avec mageia 3 et 4 
 #				tester sur mageia 4 et fedora 20 ,i386 gnome + gdm , devrai marcher avec kdm de lightdm aussi
