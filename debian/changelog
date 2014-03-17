@@ -1,3 +1,9 @@
+ctparental (3.84.1-1) unstable; urgency=medium
+
+  * Upstream fix for fedora 20 support.
+
+ -- Gilles Filippini <gilles.filippini@free.fr>  Mon, 17 Mar 2014 22:47:25 +0100
+
 ctparental (3.84-1) unstable; urgency=medium
 
   * Rely on iptables to differentiate priviledged and unpriviledged users.
