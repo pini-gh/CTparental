@@ -116,6 +116,11 @@ NWMANAGERstop=${NWMANAGERstop:="$CMDSERVICE network-manager stop"}
 NWMANAGERstart=${NWMANAGERstart:="$CMDSERVICE network-manager start"}
 NWMANAGERrestart=${NWMANAGERrestart:="$CMDSERVICE network-manager restart"}
 IPTABLESsave=${IPTABLESsave:="$CMDSERVICE iptables-persistent save"}
+SQUIDrestart=${SQUIDrestart:="$CMDSERVICE squid3 restart "}
+SQUIDstop=${SQUIDstop:="$CMDSERVICE squid3 stop "}
+
+#### UTILISATEUR propriétaire du proxy ####
+PROXYUSER=${PROXYUSER:=proxy}
 
 #### LOCALISATION du fichier PID lighttpd par default ####
 LIGHTTPpidfile=${LIGHTTPpidfile:="/var/run/lighttpd.pid"}
@@ -126,6 +131,8 @@ ENLIGHTTPD=${ENLIGHTTPD:=""}
 ENDNSMASQ=${ENDNSMASQ:=""}
 ENNWMANAGER=${ENNWMANAGER:=""}
 ENIPTABLESSAVE=${ENIPTABLESSAVE:=""}
+ENSQUID=${ENSQUID:="update-rc.d squid3 enable"}
+DISSQUID=${DISSQUID:="update-rc.d squid3 disable"}
 #### UID MINIMUM pour les UTILISATEUR
 UIDMINUSER=${UIDMINUSER:=1000}
 
@@ -198,6 +205,9 @@ DREAB="$DIR_CONF/domaine-rehabiliter"
 THISDAYS=$(expr $(date +%Y) \* 365 + $(date +%j))
 MAXDAYSFORUPDATE="7" # update tous les 7 jours
 CHEMINCTPARENTLE=$(readlink -f $0)
+
+GOOGLE_DOMAINS="http://www.google.com/supported_domains"
+GOOGLE_NOSSLSEARCH_IP="216.239.32.20"
 
 initblenabled () {
    cat << EOF > $CATEGORIES_ENABLED
@@ -274,12 +284,16 @@ download() {
    rm -rf $DIR_DNS_FILTER_AVAILABLE/
    mkdir $DIR_DNS_FILTER_AVAILABLE
 }
+download_google_tlds() {
+   wget -q -O - "$GOOGLE_DOMAINS" | sed 's:^:address=/www:;s:$:/'"$GOOGLE_NOSSLSEARCH_IP"':' >/usr/local/share/CTparental/google-tld.conf
+}
 autoupdate() {
         LASTUPDATEDAY=`grep LASTUPDATE= $FILE_CONF | cut -d"=" -f2`
         LASTUPDATEDAY=${LASTUPDATEDAY:=0}
         DIFFDAY=$(expr $THISDAYS - $LASTUPDATEDAY)
 	if [ $DIFFDAY -ge $MAXDAYSFORUPDATE ] ; then
 		download
+                download_google_tlds
 		adapt
 		catChoice
 		dnsmasqon
@@ -434,6 +448,7 @@ dnsmasqon () {
          # Configuration file for "dnsmasq with blackhole"
    # Inclusion de la blacklist <domains> de Toulouse dans la configuration
    conf-dir=$DIR_DNS_BLACKLIST_ENABLED
+   conf-file=/usr/local/share/CTparental/google.conf
    # conf-file=$DIR_DEST_ETC/alcasar-dns-name   # zone de definition de noms DNS locaux
    interface=lo
    listen-address=127.0.0.1
@@ -455,25 +470,102 @@ dnsmasqoff () {
    $SED "s?^DNSMASQ.*?DNSMASQ=OFF?g" $FILE_CONF
 }
 iptableson () {
+   unpriviledged=
+   for user in `listeusers` ; do
+      if ! groups $user | grep -qw "ctoff"; then
+         unpriviledged="$unpriviledged $user"
+      fi
+   done
    # Redirect DNS requests
    # note: http://superuser.com/a/594164
    /sbin/iptables -t nat -N ctparental
    /sbin/iptables -t nat -A OUTPUT -j ctparental
-   # Force non priviledged users to use dnsmasq
-      for user in `listeusers` ; do
-      if  [ $(groups $user | grep -c " ctoff$") -eq 0 ];then
-         /sbin/iptables -t nat -A ctparental -m owner --uid-owner "$user" -p tcp --dport 53 -j DNAT --to 127.0.0.1:54 
-         /sbin/iptables -t nat -A ctparental -m owner --uid-owner "$user" -p udp --dport 53 -j DNAT --to 127.0.0.1:54
-      fi
-      done
+   # Force non priviledged users and proxy to use dnsmasq
+   for user in $unpriviledged "$PROXYUSER"; do
+      /sbin/iptables -t nat -A ctparental -m owner --uid-owner "$user" -p tcp --dport 53 -j DNAT --to 127.0.0.1:54 
+      /sbin/iptables -t nat -A ctparental -m owner --uid-owner "$user" -p udp --dport 53 -j DNAT --to 127.0.0.1:54
+   done
+
+   # Force proxy usage
+   /sbin/iptables -N ctparental
+   /sbin/iptables -A OUTPUT -j ctparental
+   # Bloc outgoing requests from unpriviledged users
+   for user in $unpriviledged; do
+      /sbin/iptables -A ctparental -m owner --uid-owner "$user" ! -d localhost -j DROP
+   done
+
    # Save configuration so that it survives a reboot
    $IPTABLESsave
 }
 iptablesoff () {
-   /sbin/iptables -t nat -D OUTPUT -j ctparental || /bin/true
-   /sbin/iptables -t nat -F ctparental || /bin/true
-   /sbin/iptables -t nat -X ctparental || /bin/true
+   for table in filter nat; do
+      /sbin/iptables -t $table -D OUTPUT -j ctparental || /bin/true
+      /sbin/iptables -t $table -F ctparental || /bin/true
+      /sbin/iptables -t $table -X ctparental || /bin/true
+   done
    $IPTABLESsave
+}
+squidon () {
+   cat <<EOF >/etc/squid3/squid.conf
+acl SSL_ports port 443
+acl Safe_ports port 80		# http
+acl Safe_ports port 21		# ftp
+acl Safe_ports port 443		# https
+acl Safe_ports port 70		# gopher
+acl Safe_ports port 210		# wais
+acl Safe_ports port 1025-65535	# unregistered ports
+acl Safe_ports port 280		# http-mgmt
+acl Safe_ports port 488		# gss-http
+acl Safe_ports port 591		# filemaker
+acl Safe_ports port 631		# cups
+acl Safe_ports port 777		# multiling http
+acl PURGE method PURGE
+acl CONNECT method CONNECT
+http_access allow all
+http_port localhost:3128
+coredump_dir /var/spool/squid3
+url_rewrite_program /usr/bin/squidGuard -c /etc/squidguard/squidGuard.conf
+url_rewrite_children 10 startup=0 idle=1 concurrency=0
+refresh_pattern ^ftp:		1440	20%	10080
+refresh_pattern ^gopher:	1440	0%	1440
+refresh_pattern -i (/cgi-bin/|\?) 0	0%	0
+refresh_pattern .		0	20%	4320
+cache_effective_user $PROXYUSER
+cache_effective_group $PROXYUSER
+EOF
+   cat <<EOF >/etc/squidguard/squidGuard.conf
+dbhome /var/lib/squidguard/db
+logdir /var/log/squidguard
+time workhours {
+	weekly mtwhf 08:00 - 16:30
+	date *-*-01  08:00 - 16:30
+}
+dest good {
+}
+dest local {
+}
+rewrite search_engine {
+	s@(.*\.google\..*/(custom|search|images|groups|news)?.*q=.*)@\1\&safe=strict@i
+	s@(.*\..*/yandsearch?.*text=.*)@\1\&fyandex=1@i
+	s@(.*\.yahoo\..*/search.*p=.*)@\1\&vm=r@i
+	s@(.*\.live\..*/.*q=.*)@\1\&adlt=strict@i
+	s@(.*\.msn\..*/.*q=.*)@\1\&adlt=strict@i
+	s@(.*\.bing\..*/search.*q=.*)@\1\&adlt=strict@i
+}
+acl {
+	default {
+		pass	all
+		rewrite search_engine
+	}
+}
+EOF
+   squidGuard -C all
+   $ENSQUID
+   $SQUIDrestart
+}
+squidoff () {
+   $SQUIDstop
+   $DISSQUID
 }
 dnsmasqwhitelistonly  () {
    $SED "s?^DNSMASQ.*?DNSMASQ=WHITE?g" $FILE_CONF
@@ -881,6 +973,7 @@ install () {
       if [ ! -f blacklists.tar.gz ]
       then
          download
+         download_google_tlds
       else
          tar -xzf blacklists.tar.gz -C $tempDIR
          if [ ! $? -eq 0 ]; then
@@ -1464,10 +1557,12 @@ case $arg1 in
       install
       iptablesoff
       iptableson
+      squidon
       exit 0
       ;;
    -u | --uninstall )
       autoupdateoff 
+      squidoff
       iptablesoff
       dnsmasqoff
       desactivetimelogin
@@ -1476,6 +1571,7 @@ case $arg1 in
       ;;
    -dl | --download )
       download
+      download_google_tlds
       adapt
       catChoice
       dnsmasqon
@@ -1500,10 +1596,12 @@ case $arg1 in
    -on | --on )
       dnsmasqon
       iptableson
+      squidon
       exit 0
       ;;
    -off | --off )
       autoupdateoff 
+      squidoff
       dnsmasqoff
       iptablesoff
       exit 0

@@ -1,4 +1,6 @@
-# 09/01/2014
+# 18/03/2014
+# Version 3.90  Utilisation de squid + squidguard pour ré-écrire les URL des moteurs de recherche afin de forcer les modes "safe".
+#               Impose de configurer le proxy localhost:3128 pour les comptes non privilégiés.
 # Version 3.84  Abendont des scripte a l'ouverture de session au profit de règles iptables dedier au utilisateur filtrée.
 # Version 3.83 	Correctif de bugs, notament celui qui pouvais suprimer trops de paquet a la desinstallation (en mode manuel)
 #				Compatibilitée avec mageia 3 et 4 
