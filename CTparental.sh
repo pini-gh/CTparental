@@ -782,7 +782,7 @@ cp -rf CTadmin/* $DIRadminHTML/
 	clear
 	echo "Entrer le mot de passe de $loginhttp :"
 	while (true); do
-		 read password
+		 read -s password
 		 case $password in
 			 * )
 			 echo "password: $password" >> /root/passwordCTadmin
