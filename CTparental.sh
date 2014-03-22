@@ -995,11 +995,20 @@ install () {
       $ENDNSMASQ
       $ENNWMANAGER
       $ENIPTABLESSAVE
-
-
-      
+      setproxyenv
 }
 
+
+setproxyenv () {
+  unsetproxyenv
+  echo "#CTparentalBEGIN" >>/etc/environment
+  cat "$DIR_CONF/localproxy.env" >>/etc/environment
+  echo "#CTparentalEND" >>/etc/environment
+}
+
+unsetproxyenv () {
+  sed -i '/CTparentalBEGIN/,/CTparentalEND/d' /etc/environment
+}
 
 updatelistgctoff () {
 	## on ajoutes tous les utilisateurs manquant dans la liste
@@ -1045,6 +1054,7 @@ desactivegourpectoff () {
 }
 
 uninstall () {
+   unsetproxyenv
    desactivegourpectoff
    rm -f /etc/cron.d/CTparental*
    $DNSMASQrestart
